@@ -7,6 +7,7 @@ public class PlayerJump : MonoBehaviour {
 	public int jumpPower = 20000;
 	bool pressed = false;
 	public int jumps = 2;
+
 	Vector3 cur;
 
 	// Use this for initialization
@@ -19,32 +20,31 @@ public class PlayerJump : MonoBehaviour {
 		if ((Input.GetButtonDown("Jump") || Input.GetKey("space")) && (isGrounded ||  jumps > 0) && !pressed)
 		{
 			--jumps;
-			pressed = true;
-			Jump();
+			pressed = true;//button is being held down
+			Jump();//what is says on the label -_-
 		}
 
 		if((Input.GetButtonUp("Jump") || Input.GetKeyUp("space"))){
-			pressed = false;
-		} 
+			pressed = false;//you don't say? D:
+		} //button is no longer down
 	}
 
 	void Jump(){
-		rigidbody.useGravity = false;//turn off gravity, set v vel to 0, turn back on
-		cur = rigidbody.velocity;
-		cur.y = 0f;
+		cur = rigidbody.velocity;//gets current velocity
+		cur.y = 0f;//sets the y vel to 0
 		rigidbody.velocity = cur;//set current vertical vel to 0
 		rigidbody.AddForce(new Vector3(0, jumpPower, 0), ForceMode.Force);
-		rigidbody.useGravity = true;
-		isGrounded = false;
-		}
+		isGrounded = false;//model is now in air
+	}
 
 	void FixedUpdate(){
 
-		isGrounded = Physics.Raycast(transform.position, -Vector3.up, 0.1f);
+		isGrounded = Physics.Raycast(rigidbody.transform.position, Vector3.down, 0.1f);
 		
-		if(isGrounded && !pressed)
-			jumps = 2;
+		if(isGrounded && rigidbody.velocity.y < -.1){
+			jumps = 2;//once character lands, you get two jumps
+		}//second condition prevents isGrounded activating after jump
 
-		}
+	}
 
 }
