@@ -17,6 +17,7 @@ public class PlayerMovement : MonoBehaviour
 	public bool isGrounded = true;
 	public bool canDrop = false;
 	public int jumps;//jumps left (enables mid air jumps)
+	public int animState = 0;
 
 /*controller inputs and states
   Might map all buttons here instead of in update, tbd
@@ -45,7 +46,7 @@ public class PlayerMovement : MonoBehaviour
 		//speed = max_speed;
 		jumps = maxJump;
 		pressed = false;//init
-		floorMask = LayerMask.GetMask ("Floor");
+		//floorMask = LayerMask.GetMask ("Floor");
 		bottom = GetComponent<BoxCollider>();
 		anim = GetComponent <Animator> ();
 		playerRigidbody = GetComponent <Rigidbody> ();
@@ -189,6 +190,6 @@ Animating: BIG SUPRISE!
 
 	void Animating (float h)
 	{
-		anim.SetBool ("IsRunning", h != 0 && isGrounded);
+		//anim.SetBool ("IsRunning", h != 0 && isGrounded);
 	}//Animating
 }
