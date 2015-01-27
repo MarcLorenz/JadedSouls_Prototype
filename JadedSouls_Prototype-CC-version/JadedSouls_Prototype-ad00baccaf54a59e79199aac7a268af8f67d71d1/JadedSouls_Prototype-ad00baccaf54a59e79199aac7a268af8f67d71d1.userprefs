@@ -1,8 +1,8 @@
 ﻿<Properties>
   <MonoDevelop.Ide.Workspace />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\Scripts\Player.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="..\..\JadedSouls_Prototype-master\JadedSouls_Prototype-ad00baccaf54a59e79199aac7a268af8f67d71d1\Assets\Scripts\Player.cs">
     <Files>
-      <File FileName="Assets\Scripts\Player.cs" Line="233" Column="60" />
+      <File FileName="..\..\JadedSouls_Prototype-master\JadedSouls_Prototype-ad00baccaf54a59e79199aac7a268af8f67d71d1\Assets\Scripts\Player.cs" Line="238" Column="24" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
