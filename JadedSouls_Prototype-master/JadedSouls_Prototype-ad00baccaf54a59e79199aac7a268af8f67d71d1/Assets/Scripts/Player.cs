@@ -19,7 +19,7 @@ public class Player : MonoBehaviour {
 	public float walkSpeed = 2F;
 	public float jumpSpeed = 10f;//force of jump
 	public float fallSpeed = 10f;//modified fall speed
-	public float gravity = 15f;//225F;//20 * 9.8;
+	public float gravity = 20f;//225F;//20 * 9.8;
 	public float maxSpeed = 20f;
 	public float airMod = 3/5f;//modify speed if in air
 	public int maxJumps = 2;//maximum number of jumps
@@ -33,6 +33,7 @@ public class Player : MonoBehaviour {
 	public bool isCrouching = false;//is crouching
 	public int jumps = 0;//jumps left (enables mid air jumps)
 	public bool canDrop = false;//can go through platform
+	public bool isJumping = false;
 
 	/*controller inputs and states
     Might map all buttons here instead of in update, tbd
@@ -97,8 +98,9 @@ public class Player : MonoBehaviour {
 				  Move();
 			}//regular horizontal movement
 
-			if(jump_button && (isGrounded ||  jumps > 0) && !pressed){
+			if(jump_button && (isGrounded ||  jumps > 0) && !pressed && !isCrouching){
 				pressed = true;//need to modify this soon for short jump
+				isJumping = true;
 				Jump();
 			}
 			else{
@@ -120,6 +122,11 @@ public class Player : MonoBehaviour {
 		}//run these regardless
 
 		crouch();//might need to change the order
+		if (isCrouching) {
+			//dropDown();
+			moveVect.x = 0;
+		}
+		dropDown ();
 
 		//everything that runs regardless
 		if(delay > 0){
@@ -131,6 +138,7 @@ public class Player : MonoBehaviour {
 		}//on landing add lag
 
 		Animating();
+		isJumping = false;
 		controller.Move(moveVect * Time.deltaTime);//move
 	}//update
 
@@ -168,7 +176,7 @@ public class Player : MonoBehaviour {
 
 
 	void Gravity(bool on = true, float modifier = 1f){
-		if(on)
+		if (on)
 			moveVect.y -= gravity * Time.deltaTime * modifier;
 	}//apply gravity
 
@@ -222,16 +230,16 @@ public class Player : MonoBehaviour {
 			Physics.IgnoreLayerCollision(layer, PLATFORMS, false);
 		}//dropDown, drop off a platform
 
-		if(v <= -THRESHOLD && !isGrounded){//if(v == -1 && !isGrounded){
-			moveVect.y = -fallSpeed;
-		}//if in the air, speed up fall when v down
+		//if(v <= -THRESHOLD && !isGrounded){//if(v == -1 && !isGrounded){
+		//	moveVect.y = -fallSpeed;
+		//}//if in the air, speed up fall when v down
 	}//dropDown
 
 
 
 
 	void crouch(){
-		if(isGrounded && v < 0 || Input.GetButtonDown("Vertical")){//&& v > -THRESHOLD){
+		if(isGrounded && v < 0 || Input.GetButton("Crouch")){
 			isCrouching = true;
 		}
 		else{
@@ -242,11 +250,12 @@ public class Player : MonoBehaviour {
 
 
 	void Animating(){
-		anim.SetBool ("IsRunning", h >= THRESHOLD || h <= -THRESHOLD && !isCrouching);
 		anim.SetBool ("IsWalking", h != 0 && (h < THRESHOLD || h > -THRESHOLD) && !isCrouching);
+		anim.SetBool ("IsRunning", h >= THRESHOLD || h <= -THRESHOLD && !isCrouching);
 		anim.SetBool ("IsGrounded", isGrounded);
-		anim.SetBool ("IsJumping", !isGrounded);
+		anim.SetBool ("IsJumping", isJumping);
 		anim.SetBool ("IsCrouching", isCrouching && isGrounded);
-		anim.SetBool ("IsFalling", isGrounded && delay > 0);
+		anim.SetBool ("IsFalling", !isGrounded);
+		anim.SetBool ("IsJumping2", jumps <= 1 && isJumping);
 	}//animations
 }
