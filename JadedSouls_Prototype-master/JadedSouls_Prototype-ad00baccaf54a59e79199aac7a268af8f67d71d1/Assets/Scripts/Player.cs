@@ -12,6 +12,8 @@ public class Player : MonoBehaviour {
 	const int PLATFORMS = 8;//platform layer
 	public float THRESHOLD = 0.85f;//controller sensitivity essentially
 	public int CHANGE_DIR = 20;
+	const float GRAVITY_DEF = -0.5f;
+
 
 
 	//presets for character
@@ -19,7 +21,8 @@ public class Player : MonoBehaviour {
 	public float walkSpeed = 2F;
 	public float jumpSpeed = 10f;//force of jump
 	public float fallSpeed = 10f;//modified fall speed
-	public float gravity = 20f;//225F;//20 * 9.8;
+	public float gravity = 21f;//225F;//20 * 9.8;
+	//public float maxFallSpeed = 40f;
 	public float maxSpeed = 20f;
 	public float airMod = 3/5f;//modify speed if in air
 	public int maxJumps = 2;//maximum number of jumps
@@ -48,14 +51,14 @@ public class Player : MonoBehaviour {
 	Animator anim;
 	CharacterController controller;//get the charactercontroller
 	BoxCollider body_base;
-	public int layer = 0;//do not allow active characters to have the same layer
+	public int layer = 9;//do not allow active characters to have the same layer
 	
 	//variables
 	public int delay;//stop recieving controls for x frames
 	public int jumpFrame = 0;
 	public int maxJumpFrames = 5;
 	public float currSpeed;//current speed w/ modifier
-	private Vector3 moveVect = Vector3.zero;
+	public Vector3 moveVect = Vector3.zero;
 
 
 	void Awake()
@@ -77,6 +80,9 @@ public class Player : MonoBehaviour {
 	void Update(){
 		/*controls character movement*/
 		isGrounded = controller.isGrounded;
+
+		if (isGrounded)
+			moveVect.y = GRAVITY_DEF;
 
 		if(transform.position.z != 0){
 			transform.position = new Vector3(transform.position.x,transform.position.y, 0); 
@@ -155,7 +161,17 @@ public class Player : MonoBehaviour {
 			moveVect = Vector3.zero;
 			controller.transform.position = new Vector3(2, 6, 0);
 		}
+
+		//Debug.Log(other.name);
+
+
 	}//OnTriggerEnter
+
+	void OnTriggerStay(Collider other){
+		if (other.GetComponentInParent<Entity>()) {
+			other.GetComponentInParent<Entity>().SendMessage("Pushed", moveVect);
+		}
+	}
 
 
 	void OnTriggerExit(Collider other){
@@ -164,6 +180,12 @@ public class Player : MonoBehaviour {
 		}
 		//controller.detectCollisions = true;
 	}//OnTriggerExit
+
+
+
+	void OnControllerColliderHit(ControllerColliderHit hit){
+
+	}
 
 
 	/*General Action Functions*/
@@ -198,13 +220,13 @@ public class Player : MonoBehaviour {
 			}//tilted to left
 
 			if(h >= THRESHOLD || h <= -THRESHOLD){
-				if(isGrounded && false){
-					delay = CHANGE_DIR;
-					currSpeed = 0;
-				}//changing directions takes time
-				else{
+				//if(isGrounded){
+			//		delay = CHANGE_DIR;
+			//		currSpeed = 0;
+				//}//changing directions takes time
+				//else{
 					currSpeed *= speed * speed_mod;
-				}
+				//}
 			}//run speed
 			else{
 				currSpeed *= walkSpeed * speed_mod;	
@@ -251,11 +273,11 @@ public class Player : MonoBehaviour {
 
 	void Animating(){
 		anim.SetBool ("IsWalking", h != 0 && (h < THRESHOLD || h > -THRESHOLD) && !isCrouching);
-		anim.SetBool ("IsRunning", h >= THRESHOLD || h <= -THRESHOLD && !isCrouching);
+		anim.SetBool ("IsRunning", h != 0 && h >= THRESHOLD || h <= -THRESHOLD && !isCrouching);
 		anim.SetBool ("IsGrounded", isGrounded);
 		anim.SetBool ("IsJumping", isJumping);
 		anim.SetBool ("IsCrouching", isCrouching && isGrounded);
 		anim.SetBool ("IsFalling", !isGrounded);
-		anim.SetBool ("IsJumping2", jumps <= 1 && isJumping);
+		anim.SetBool ("IsJumping2", jumps <= 1);
 	}//animations
 }

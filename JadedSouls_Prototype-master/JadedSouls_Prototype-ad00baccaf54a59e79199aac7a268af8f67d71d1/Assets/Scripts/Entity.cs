@@ -7,20 +7,21 @@ public class Entity : MonoBehaviour {
 	const int RIGHT = 1;//right
 	const int LEFT = -1;//left
 	const int PLATFORMS = 8;//platform layer
-	public float THRESHOLD = 0.85f;//controller sensitivity essentially
-	public int CHANGE_DIR = 20;
-
+	const float GRAVITY_DEF = -0.5f;
 	public float fallSpeed = 10f;//modified fall speed
 	public float gravity = 20f;//225F;//20 * 9.8;
 	public bool isGrounded = false;//is on ground
+	public bool isStatic = false;
 
 	public int facing;//right = 1, left = -1
 
 	//components
 	Animator anim;
-	CharacterController controller;//get the charactercontroller
-	BoxCollider body_base;
-	public int layer = 0;//do not allow active characters to have the same layer
+	public CharacterController controller;//get the charactercontroller
+	//BoxCollider body_base;
+	public BoxCollider bottom;//horrible name imo but base is taken
+	public int layer = 0;//do not allow active entities to have the same layer
+	public Rigidbody calcPhy;
 
 	//variables
 	public int delay;//stop recieving controls for x frames
@@ -35,13 +36,13 @@ public class Entity : MonoBehaviour {
 	
 	void Awake()
 	{
-		body_base = GetComponent<BoxCollider>();
+		//body_base = GetComponent<BoxCollider>();
+		bottom = GetComponent<BoxCollider>();
 		anim = GetComponent <Animator> ();
 		moveVect = new Vector3(0, 0, 0);//initialize the move vector
 		controller = GetComponent<CharacterController>();
-		
+		calcPhy = GetComponent<Rigidbody>();
 		delay = 8;
-		
 		if(transform.rotation.eulerAngles.y > 90)
 			facing = RIGHT;
 		else
@@ -54,13 +55,17 @@ public class Entity : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-
 		/*controls character movement*/
 		isGrounded = controller.isGrounded;
+
+		if (isGrounded)
+			moveVect.y = GRAVITY_DEF;
 
 		if(transform.position.z != 0){
 			transform.position = new Vector3(transform.position.x,transform.position.y, 0); 
 		}//STAY ON THE X AXIS DANGIT
+
+		Gravity(!isGrounded);
 
 		Animating();
 		controller.Move(moveVect * Time.deltaTime);//move
@@ -68,4 +73,52 @@ public class Entity : MonoBehaviour {
 
 	void Animating(){
 	}//animations
+
+	void OnCollisionEnter(Collision collisionInfo){
+		//if(collisionInfo.other.name == "Platform" 
+		// || collisionInfo.other.name == "Floor")
+		//isGrounded = false;
+	}//OnCollisionExit
+
+	void OnCollisionExit(Collision collisionInfo){
+		//if(collisionInfo.other.name == "Platform" 
+		  // || collisionInfo.other.name == "Floor")
+			//isGrounded = false;
+	}//OnCollisionExit
+
+	void OnTriggerEnter(Collider other){
+		//if(other.collider.name == "Floor" 
+		  // || other.collider.name == "Platform"){
+		//	delay = landFrames;
+			
+		//}//if landing, delay movement
+		
+		if(other.collider.name == "Edge")
+		{
+			moveVect = Vector3.zero;
+			controller.transform.position = new Vector3(2, 6, 0);
+		}
+		
+		//Debug.Log(other.name);
+		
+		
+	}//OnTriggerEnter
+	
+	
+	//only really matters when the collider is disabled
+	void OnTriggerExit(Collider other){
+		//bottom.isTrigger = false;
+		if (other.GetComponentsInParent<Entity> () != null)
+						moveVect.x = 0;
+	}//OnTriggerExit
+
+	void Pushed(Vector3 forces){
+		moveVect.x = forces.x/10;
+	}
+	
+	void Gravity(bool on = true, float modifier = 1f){
+		if (on)
+			moveVect.y -= gravity * Time.deltaTime * modifier;
+	}//apply gravity
+
 }
