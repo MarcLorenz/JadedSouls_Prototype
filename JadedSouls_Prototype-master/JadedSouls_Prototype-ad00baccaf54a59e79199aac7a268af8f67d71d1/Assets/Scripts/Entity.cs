@@ -25,7 +25,7 @@ public class Entity : MonoBehaviour {
 
 	//variables
 	public int delay;//stop recieving controls for x frames
-
+	public bool isGravity;
 	public float currSpeed;//current speed w/ modifier
 	public Vector3 moveVect = Vector3.zero;
 
@@ -37,6 +37,7 @@ public class Entity : MonoBehaviour {
 	public virtual void Awake()
 	{
 		//body_base = GetComponent<BoxCollider>();
+		isGravity = true;
 		bottom = GetComponent<BoxCollider>();
 		anim = GetComponent <Animator> ();
 		moveVect = new Vector3(0, 0, 0);//initialize the move vector
@@ -58,22 +59,19 @@ public class Entity : MonoBehaviour {
 		/*controls character movement*/
 		isGrounded = controller.isGrounded;
 
-		if (isGrounded)
+		if (isGravity && isGrounded)
 			moveVect.y = GRAVITY_DEF;
 
 		if(transform.position.z != 0){
 			transform.position = new Vector3(transform.position.x,transform.position.y, 0); 
 		}//STAY ON THE X AXIS DANGIT
 
-		Gravity(!isGrounded);
+		Gravity(isGravity && !isGrounded);
 
 		Animating();
 		controller.Move(moveVect * Time.deltaTime);//move
 	}
-
-	public virtual void Animating(){
-	}//animations
-
+	
 	public virtual void OnCollisionEnter(Collision collisionInfo){
 		//if(collisionInfo.other.name == "Platform" 
 		// || collisionInfo.other.name == "Floor")
@@ -120,5 +118,9 @@ public class Entity : MonoBehaviour {
 		if (on)
 			moveVect.y -= gravity * Time.deltaTime * modifier;
 	}//apply gravity
+
+	public virtual void Animating(){
+	}//animations
+
 
 }

@@ -13,7 +13,7 @@ public class PlayerMovement : Entity
 	public float maxSpeed = 20f;
 	public float airMod = 3/5f;//modify speed if in air
 	public int maxJumps = 2;//maximum number of jumps
-	public int landFrames = 7;//when you land from air freeze
+	public int landFrames = 7;//when you land from air free
 
 //inherits from entity
 	//might or might not fill this out
@@ -22,6 +22,7 @@ public class PlayerMovement : Entity
 	public bool running = false;
 	public bool canDrop = false;
 	public int jumps;//jumps left (enables mid air jumps)
+	public bool isCrouching = false;//is crouching
 
 /*controller inputs and states
   Might map all buttons here instead of in update, tbd
@@ -42,12 +43,13 @@ public class PlayerMovement : Entity
 	//Vector3 movement;
 	//float speed;//speed modifier
 	//Vector3 cur;//temp variable to access velocity
-	public int cooldown;//for lag frames
+	public int cooldown;//for lag frame
 
 //functions
 
 	void Awake(){
 		base.Awake ();
+		isCrouching = false;
 		cooldown = 0;//initialize cooldown
 		//speed = max_speed;
 		jumps = maxJumps;
@@ -66,13 +68,14 @@ public class PlayerMovement : Entity
 
 	void Update(){
 
-		base.Update();
-		//h = Input.GetAxisRaw ("Horizontal");//raw x axis
-		//v = Input.GetAxisRaw ("Vertical");//raw y axis
-		//jump_button = (Input.GetButton("Jump") || Input.GetKey("space"));
-		//jump_button_up = (Input.GetButtonUp("Jump") || Input.GetKeyUp("space"));
+		/*h = Input.GetAxisRaw ("Horizontal");//raw x axis
+		v = Input.GetAxisRaw ("Vertical");//raw y axis
+		jump_button = (Input.GetButton("Jump") || Input.GetKey("space"));
+		jump_button_up = (Input.GetButtonUp("Jump") || Input.GetKeyUp("space"));
+*/
+		isGravity = true;
 
-		if(!isGrounded){
+		/*if(!isGrounded){
 			Move(airMod);
 		}//movement in air
 		else{
@@ -80,20 +83,23 @@ public class PlayerMovement : Entity
 				Move();
 		}//regular horizontal movement
 
-		if (cooldown == 0) {
+		if ((Input.GetButtonDown ("Jump") || Input.GetKey ("space")) 
+			&& (isGrounded || jumps > 0) && !pressed) {
+			pressed = true;//button is being held down
+			isGravity = false;
+			Jump ();//what is says on the label -_-
+		}//if
 
-			if ((Input.GetButtonDown ("Jump") || Input.GetKey ("space")) 
-				&& (isGrounded || jumps > 0) && !pressed) {
-				pressed = true;//button is being held down
-				Jump ();//what is says on the label -_-
-			}//if
+		if ((Input.GetButtonUp ("Jump") || Input.GetKeyUp ("space"))) {
+			pressed = false;//you don't say? D:
+		} //button is no longer down
 
-		
-			if ((Input.GetButtonUp ("Jump") || Input.GetKeyUp ("space"))) {
-				pressed = false;//you don't say? D:
-			} //button is no longer down
-
-		}
+		if(jump_button_up){
+			--jumps;
+			pressed = false;//you don't say? D:
+		} //button is no longer down
+*/
+		base.Update();
 	}//Update
 
 
@@ -156,13 +162,7 @@ Animating: BIG SUPRISE!
 			}//tilted to left
 
 			if(h >= THRESHOLD || h <= -THRESHOLD){
-				//if(isGrounded){
-			//		delay = CHANGE_DIR;
-			//		currSpeed = 0;
-				//}//changing directions takes time
-				//else{
 					currSpeed *= speed * speed_mod;
-				//}
 			}//run speed
 			else{
 				currSpeed *= walkSpeed * speed_mod;	
@@ -185,6 +185,12 @@ Animating: BIG SUPRISE!
 
 	void Animating (float h){
 		base.Animating ();
-		//anim.SetBool ("IsRunning", h != 0 && isGrounded);
+		anim.SetBool ("IsWalking", h != 0 && (h < THRESHOLD || h > -THRESHOLD));// && !isCrouching);
+		anim.SetBool ("IsRunning", h != 0 && h >= THRESHOLD || h <= -THRESHOLD);// && !isCrouching);
+		anim.SetBool ("IsGrounded", isGrounded);
+		//anim.SetBool ("IsJumping", isJumping);
+		anim.SetBool ("IsCrouching", isCrouching && isGrounded);
+		anim.SetBool ("IsFalling", !isGrounded);
+		anim.SetBool ("IsJumping2", jumps <= 1);
 	}//Animating
 }
