@@ -2,8 +2,12 @@
 using System.Collections;
 public class PlayerMovement : Entity
 {
+	public float THRESHOLD = 0.85f;//controller sensitivity essentially
+	public int CHANGE_DIR = 20;
+	int[] playerLayers = {9, 10, 11, 12};
 
-//presets for character
+	//presets for character
+	public float speed = 8F;//ground movement speed
 	public float walkSpeed = 2F;
 	public float jumpSpeed = 10f;//force of jump
 	public float maxSpeed = 20f;
@@ -22,24 +26,28 @@ public class PlayerMovement : Entity
 /*controller inputs and states
   Might map all buttons here instead of in update, tbd
 */
-	public bool pressed;//is a button being held down?
 
+	public bool jump_button;
+	public bool jump_button_up;
+	public bool drop_button = false;
+	public bool pressed = false;//is a button being held down?
 	public float h;//x axis
-	public float v;//y axis 
+	public float v;//y axis
 
 //components
-	Animator anim;
+	//Anim
 	Rigidbody playerRigidbody;//might not actually need this
 
 //misc and variables
-	Vector3 movement;
-	float speed;//speed modifier
-	Vector3 cur;//temp variable to access velocity
+	//Vector3 movement;
+	//float speed;//speed modifier
+	//Vector3 cur;//temp variable to access velocity
 	public int cooldown;//for lag frames
 
 //functions
 
 	void Awake(){
+		base.Awake ();
 		cooldown = 0;//initialize cooldown
 		//speed = max_speed;
 		jumps = maxJumps;
@@ -57,18 +65,33 @@ public class PlayerMovement : Entity
 
 
 	void Update(){
+
+		base.Update();
+		//h = Input.GetAxisRaw ("Horizontal");//raw x axis
+		//v = Input.GetAxisRaw ("Vertical");//raw y axis
+		//jump_button = (Input.GetButton("Jump") || Input.GetKey("space"));
+		//jump_button_up = (Input.GetButtonUp("Jump") || Input.GetKeyUp("space"));
+
+		if(!isGrounded){
+			Move(airMod);
+		}//movement in air
+		else{
+			//if(!isCrouching)
+				Move();
+		}//regular horizontal movement
+
 		if (cooldown == 0) {
 
 			if ((Input.GetButtonDown ("Jump") || Input.GetKey ("space")) 
 				&& (isGrounded || jumps > 0) && !pressed) {
 				pressed = true;//button is being held down
 				Jump ();//what is says on the label -_-
-				}//if
+			}//if
 
 		
-				if ((Input.GetButtonUp ("Jump") || Input.GetKeyUp ("space"))) {
-					pressed = false;//you don't say? D:
-				} //button is no longer down
+			if ((Input.GetButtonUp ("Jump") || Input.GetKeyUp ("space"))) {
+				pressed = false;//you don't say? D:
+			} //button is no longer down
 
 		}
 	}//Update
@@ -79,7 +102,7 @@ public class PlayerMovement : Entity
 		if(cooldown > 0)
 			--cooldown;//count down if neededd
 
-		Move (h);
+		//Move (h);
 		Animating (h);
 		
 		if(isGrounded && playerRigidbody.velocity.y <= 0.001){
@@ -95,6 +118,7 @@ Pretty easy to understand, but I might add more comments soon
 */
 
 	void OnCollisionEnter(Collision collision) {
+		base.OnCollisionEnter(collision);
 		foreach (ContactPoint contact in collision.contacts) {
 			if(contact.otherCollider.name == "Platform"){
 				canDrop = true;//are you on a platform?
@@ -116,49 +140,51 @@ Jump: Self Explanatory...must I say more?
 Animating: BIG SUPRISE!
 
 */
-	void Move (float h)
+	void Move (float speed_mod = 1f)
 {
-		movement.Set (h, 0, 0);
-
-		if(isGrounded)//max possible speed in/on air/ground
-			speed = maxSpeed;
-		else
-			speed = maxSpeed * airMod;
-
-		/*STUB: apply modifiers here*/
+		if(h != 0){
+			if(h > 0){
+				facing = RIGHT;
+				currSpeed = 1;
+				transform.rotation = Quaternion.LookRotation(Vector3.right);
+			}//tilted to right
 		
-		movement = movement * speed * Time.deltaTime;
-		playerRigidbody.MovePosition(transform.position + movement);
-		
-		if (facing < 0 && h > 0 ){
-			//cooldown = 2;
-			playerRigidbody.rotation = Quaternion.LookRotation(Vector3.right);
-			facing = 1;
-		}//if facing left
+			if(h < 0){
+				facing = LEFT;
+				currSpeed = -1;
+				transform.rotation = Quaternion.LookRotation(Vector3.left);
+			}//tilted to left
 
-		if (facing > 0 && h < 0){
-			//cooldown = 2;
-			playerRigidbody.rotation = Quaternion.LookRotation(Vector3.left);
-			facing = -1;
-		}//if facing right
-		
-	}//Move
-	
+			if(h >= THRESHOLD || h <= -THRESHOLD){
+				//if(isGrounded){
+			//		delay = CHANGE_DIR;
+			//		currSpeed = 0;
+				//}//changing directions takes time
+				//else{
+					currSpeed *= speed * speed_mod;
+				//}
+			}//run speed
+			else{
+				currSpeed *= walkSpeed * speed_mod;	
+			}//walk speed
+
+			moveVect.x = currSpeed;
+		}//joystick is tilted
+		else{
+			moveVect.x = 0;
+		}//no tilt
+
+	}//horizontal movement, note rotations are only ascetic
 
 
-	void Jump(){
-		moveVect.y = (jumpSpeed);
-		//cur = rigidbody.velocity;//gets current velocity
-		//cur.y = 0f;//sets the y vel to 0
-		//playerRigidbody.velocity = cur;//set current vertical vel to 0
-		//playerRigidbody.AddForce(new Vector3(0, jumpPower, 0), ForceMode.Force);
-		isGrounded = false;
-		--jumps;
-	}//Jump
+	void Jump(float modifier = 1f){
+		moveVect.y = (jumpSpeed * modifier); //* Time.deltaTime;
+	}//apply jump
 	
 	
 
 	void Animating (float h){
+		base.Animating ();
 		//anim.SetBool ("IsRunning", h != 0 && isGrounded);
 	}//Animating
 }

@@ -13,6 +13,7 @@ public class Player : MonoBehaviour {
 	public float THRESHOLD = 0.85f;//controller sensitivity essentially
 	public int CHANGE_DIR = 20;
 	const float GRAVITY_DEF = -0.5f;
+	 int[] playerLayers = {9, 10, 11, 12};
 
 
 
@@ -43,6 +44,7 @@ public class Player : MonoBehaviour {
    */
 	public bool jump_button;
 	public bool jump_button_up;
+	public bool drop_button = false;
 	public bool pressed = false;//is a button being held down?
 	public float h;//x axis
 	public float v;//y axis
@@ -50,10 +52,11 @@ public class Player : MonoBehaviour {
 	//components
 	Animator anim;
 	CharacterController controller;//get the charactercontroller
-	BoxCollider body_base;
+	//BoxCollider body_base;
 	public int layer = 9;//do not allow active characters to have the same layer
 	
 	//variables
+	public Transform my_transform;
 	public int delay;//stop recieving controls for x frames
 	public int jumpFrame = 0;
 	public int maxJumpFrames = 5;
@@ -61,17 +64,19 @@ public class Player : MonoBehaviour {
 	public Vector3 moveVect = Vector3.zero;
 
 
+
 	void Awake()
 	{
 		jumps = 0;//initializes jump
-		body_base = GetComponent<BoxCollider>();
+		//body_base = GetComponent<BoxCollider>();
 		anim = GetComponent <Animator> ();
 		moveVect = new Vector3(0, 0, 0);//initialize the move vector
 		controller = GetComponent<CharacterController>();
+		my_transform = transform;
 
 		delay = 8;
 
-		if(transform.rotation.eulerAngles.y > 90)
+		if(my_transform.rotation.eulerAngles.y > 90)
 			facing = RIGHT;
 		else
 			facing = LEFT;
@@ -84,8 +89,8 @@ public class Player : MonoBehaviour {
 		if (isGrounded)
 			moveVect.y = GRAVITY_DEF;
 
-		if(transform.position.z != 0){
-			transform.position = new Vector3(transform.position.x,transform.position.y, 0); 
+		if(my_transform.position.z != 0){
+			my_transform.position = new Vector3(my_transform.position.x,my_transform.position.y, 0); 
 		}//STAY ON THE X AXIS DANGIT
 
 		//get controls
@@ -145,6 +150,16 @@ public class Player : MonoBehaviour {
 
 		Animating();
 		isJumping = false;
+
+		if(moveVect.x > walkSpeed || moveVect.x < -walkSpeed)
+			foreach(int other in playerLayers){
+			Physics.IgnoreLayerCollision(layer, other);
+			}
+		else
+		    foreach(int other in playerLayers){
+			Physics.IgnoreLayerCollision(layer, other, false);
+		    }
+
 		controller.Move(moveVect * Time.deltaTime);//move
 	}//update
 
@@ -210,13 +225,13 @@ public class Player : MonoBehaviour {
 			if(h > 0){
 				facing = RIGHT;
 				currSpeed = 1;
-				transform.rotation = Quaternion.LookRotation(Vector3.right);
+				my_transform.rotation = Quaternion.LookRotation(Vector3.right);
 			}//tilted to right
 		
 			if(h < 0){
 				facing = LEFT;
 				currSpeed = -1;
-				transform.rotation = Quaternion.LookRotation(Vector3.left);
+				my_transform.rotation = Quaternion.LookRotation(Vector3.left);
 			}//tilted to left
 
 			if(h >= THRESHOLD || h <= -THRESHOLD){
