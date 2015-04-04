@@ -69,6 +69,7 @@ public class Entity : MonoBehaviour {
 		Gravity(isGravity && !isGrounded);
 
 		Animating();
+
 		controller.Move(moveVect * Time.deltaTime);//move
 	}
 	

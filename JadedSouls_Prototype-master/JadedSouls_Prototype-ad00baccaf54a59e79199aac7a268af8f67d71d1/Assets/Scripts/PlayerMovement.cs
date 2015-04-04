@@ -19,10 +19,12 @@ public class PlayerMovement : Entity
 	//might or might not fill this out
 
 //general info about state of character
+	public bool isJumping = false;
 	public bool running = false;
 	public bool canDrop = false;
 	public int jumps;//jumps left (enables mid air jumps)
 	public bool isCrouching = false;//is crouching
+	public bool isPushing = false;
 
 /*controller inputs and states
   Might map all buttons here instead of in update, tbd
@@ -57,48 +59,56 @@ public class PlayerMovement : Entity
 		//floorMask = LayerMask.GetMask ("Floor");
 		anim = GetComponent <Animator> ();
 		playerRigidbody = GetComponent <Rigidbody> ();
-
-		if(transform.rotation.eulerAngles.y > 90)
-			facing = -1;
-		else
-			facing = 1;
 	}//Awake
 
 
 
 	void Update(){
 
-		/*h = Input.GetAxisRaw ("Horizontal");//raw x axis
-		v = Input.GetAxisRaw ("Vertical");//raw y axis
-		jump_button = (Input.GetButton("Jump") || Input.GetKey("space"));
-		jump_button_up = (Input.GetButtonUp("Jump") || Input.GetKeyUp("space"));
-*/
-		isGravity = true;
+		h = Input.GetAxisRaw ("Horizontal2");//raw x axis
+		v = Input.GetAxisRaw ("Vertical2");//raw y axis
+		jump_button = (Input.GetButton("Jump2"));// || Input.GetKey("space"));
+		jump_button_up = (Input.GetButtonUp("Jump2"));// || Input.GetKeyUp("space"));
 
-		/*if(!isGrounded){
+		isGravity = true;//gravity is on by default
+
+		if(!isGrounded){
 			Move(airMod);
 		}//movement in air
 		else{
-			//if(!isCrouching)
+			if(!isCrouching)
 				Move();
 		}//regular horizontal movement
 
-		if ((Input.GetButtonDown ("Jump") || Input.GetKey ("space")) 
+		if ((Input.GetButtonDown ("Jump2"))// || Input.GetKey ("space")) 
 			&& (isGrounded || jumps > 0) && !pressed) {
 			pressed = true;//button is being held down
 			isGravity = false;
 			Jump ();//what is says on the label -_-
 		}//if
 
-		if ((Input.GetButtonUp ("Jump") || Input.GetKeyUp ("space"))) {
-			pressed = false;//you don't say? D:
-		} //button is no longer down
-
-		if(jump_button_up){
+		if (Input.GetButtonUp ("Jump2")){// || Input.GetKeyUp ("space"))) {
 			--jumps;
 			pressed = false;//you don't say? D:
 		} //button is no longer down
-*/
+		
+		crouch();//might need to change the order
+		if (isCrouching) {
+			//dropDown();
+			moveVect.x = 0;
+		}
+
+		dropDown ();
+
+		if(moveVect.x > walkSpeed || moveVect.x < -walkSpeed)
+		foreach(int other in playerLayers){
+			Physics.IgnoreLayerCollision(layer, other);
+		}
+		else
+		foreach(int other in playerLayers){
+			Physics.IgnoreLayerCollision(layer, other, false);
+		}
+
 		base.Update();
 	}//Update
 
@@ -113,6 +123,7 @@ public class PlayerMovement : Entity
 		
 		if(isGrounded && playerRigidbody.velocity.y <= 0.001){
 			jumps = 2;//once character lands, you get two jumps
+
 		}//if
 		
 		//Debug.Log(playerRigidbody.rotation.eulerAngles.y);
@@ -123,7 +134,7 @@ Pretty easy to understand, but I might add more comments soon
 
 */
 
-	void OnCollisionEnter(Collision collision) {
+	/*void OnCollisionEnter(Collision collision) {
 		base.OnCollisionEnter(collision);
 		foreach (ContactPoint contact in collision.contacts) {
 			if(contact.otherCollider.name == "Platform"){
@@ -138,6 +149,13 @@ Pretty easy to understand, but I might add more comments soon
 		cooldown = landFrames;//landing lag NOTE: ANY collision will cause this...
 		isGrounded = true;
 	}//OnCollisionEnter
+*/
+	void OnTriggerStay(Collider other){
+		if (other.GetComponentInParent<Entity>()) {
+			other.GetComponentInParent<Entity>().SendMessage("Pushed", moveVect);
+		}
+		isPushing = true;
+	}
 
 
 /*general movement//
@@ -172,6 +190,7 @@ Animating: BIG SUPRISE!
 		}//joystick is tilted
 		else{
 			moveVect.x = 0;
+			isPushing = false;
 		}//no tilt
 
 	}//horizontal movement, note rotations are only ascetic
@@ -180,6 +199,31 @@ Animating: BIG SUPRISE!
 	void Jump(float modifier = 1f){
 		moveVect.y = (jumpSpeed * modifier); //* Time.deltaTime;
 	}//apply jump
+
+	void crouch(){
+		if(isGrounded && (v < 0 || Input.GetButton("Crouch2"))){
+			isCrouching = true;
+		}
+		else{
+			isCrouching = false;
+		}
+	}//what it says on the name
+
+	void dropDown()
+	{
+		if(v <= -THRESHOLD /*&& canDrop*/){
+			Physics.IgnoreLayerCollision(layer, PLATFORMS, true);
+			//delay = 0;
+		}//note that this shuts down all collision detection for anything in the platform layer
+		else{
+			Physics.IgnoreLayerCollision(layer, PLATFORMS, false);
+		}//dropDown, drop off a platform
+	}//dropDown
+
+	public virtual void Pushed(Vector3 forces){
+		if (!isPushing)
+						base.Pushed (forces);
+	}
 	
 	
 
@@ -188,7 +232,7 @@ Animating: BIG SUPRISE!
 		anim.SetBool ("IsWalking", h != 0 && (h < THRESHOLD || h > -THRESHOLD));// && !isCrouching);
 		anim.SetBool ("IsRunning", h != 0 && h >= THRESHOLD || h <= -THRESHOLD);// && !isCrouching);
 		anim.SetBool ("IsGrounded", isGrounded);
-		//anim.SetBool ("IsJumping", isJumping);
+		anim.SetBool ("IsJumping", isJumping);
 		anim.SetBool ("IsCrouching", isCrouching && isGrounded);
 		anim.SetBool ("IsFalling", !isGrounded);
 		anim.SetBool ("IsJumping2", jumps <= 1);

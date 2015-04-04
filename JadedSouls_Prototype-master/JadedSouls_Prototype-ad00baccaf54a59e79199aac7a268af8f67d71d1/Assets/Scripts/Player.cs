@@ -178,8 +178,6 @@ public class Player : MonoBehaviour {
 		}
 
 		//Debug.Log(other.name);
-
-
 	}//OnTriggerEnter
 
 	void OnTriggerStay(Collider other){
@@ -187,21 +185,6 @@ public class Player : MonoBehaviour {
 			other.GetComponentInParent<Entity>().SendMessage("Pushed", moveVect);
 		}
 	}
-
-
-	void OnTriggerExit(Collider other){
-		if(other.name == "Platform"){
-			//canDrop = false;
-		}
-		//controller.detectCollisions = true;
-	}//OnTriggerExit
-
-
-
-	void OnControllerColliderHit(ControllerColliderHit hit){
-
-	}
-
 
 	/*General Action Functions*/
 
@@ -235,13 +218,7 @@ public class Player : MonoBehaviour {
 			}//tilted to left
 
 			if(h >= THRESHOLD || h <= -THRESHOLD){
-				//if(isGrounded){
-			//		delay = CHANGE_DIR;
-			//		currSpeed = 0;
-				//}//changing directions takes time
-				//else{
 					currSpeed *= speed * speed_mod;
-				//}
 			}//run speed
 			else{
 				currSpeed *= walkSpeed * speed_mod;	
@@ -266,10 +243,6 @@ public class Player : MonoBehaviour {
 		else{
 			Physics.IgnoreLayerCollision(layer, PLATFORMS, false);
 		}//dropDown, drop off a platform
-
-		//if(v <= -THRESHOLD && !isGrounded){//if(v == -1 && !isGrounded){
-		//	moveVect.y = -fallSpeed;
-		//}//if in the air, speed up fall when v down
 	}//dropDown
 
 
@@ -283,6 +256,11 @@ public class Player : MonoBehaviour {
 			isCrouching = false;
 		}
 	}//what it says on the name
+
+
+	public virtual void Pushed(Vector3 forces){
+		moveVect.x = forces.x/10;//10 is a placeholder
+	}
 
 
 
