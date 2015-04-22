@@ -30,18 +30,18 @@ public class PlayerJump : MonoBehaviour {
 	}
 
 	void Jump(){
-		cur = rigidbody.velocity;//gets current velocity
+		cur = GetComponent<Rigidbody>().velocity;//gets current velocity
 		cur.y = 0f;//sets the y vel to 0
-		rigidbody.velocity = cur;//set current vertical vel to 0
-		rigidbody.AddForce(new Vector3(0, jumpPower, 0), ForceMode.Force);
+		GetComponent<Rigidbody>().velocity = cur;//set current vertical vel to 0
+		GetComponent<Rigidbody>().AddForce(new Vector3(0, jumpPower, 0), ForceMode.Force);
 		isGrounded = false;//model is now in air
 	}
 
 	void FixedUpdate(){
 
-		isGrounded = Physics.Raycast(rigidbody.transform.position, Vector3.down, 0.1f);
+		isGrounded = Physics.Raycast(GetComponent<Rigidbody>().transform.position, Vector3.down, 0.1f);
 		
-		if(isGrounded && rigidbody.velocity.y < -.1){
+		if(isGrounded && GetComponent<Rigidbody>().velocity.y < -.1){
 			jumps = 2;//once character lands, you get two jumps
 		}//second condition prevents isGrounded activating after jump
 

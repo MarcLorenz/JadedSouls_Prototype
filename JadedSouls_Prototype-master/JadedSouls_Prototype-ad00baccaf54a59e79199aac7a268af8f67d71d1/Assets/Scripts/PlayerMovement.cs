@@ -1,10 +1,18 @@
 ﻿using UnityEngine;
 using System.Collections;
+
+
 public class PlayerMovement : Entity
 {
 	public float THRESHOLD = 0.85f;//controller sensitivity essentially
 	public int CHANGE_DIR = 20;
+	//int num_controls = 4;
+	//string[] controls = new string[] {"Horizontal", "Vertical", "Jump", "Crouch"};
+	int num_controls = 6;
+	string[] controls = new string[] {"Horizontal", "Vertical", "Jump", "Crouch", "basic_atk", "second_atk"};
+	public int player = 1;//this is appended to controls
 	int[] playerLayers = {9, 10, 11, 12};
+	string hitbox = "Player";
 
 	//presets for character
 	public float speed = 8F;//ground movement speed
@@ -36,6 +44,7 @@ public class PlayerMovement : Entity
 	public bool pressed = false;//is a button being held down?
 	public float h;//x axis
 	public float v;//y axis
+	public bool crouch_button;
 
 //components
 	//Anim
@@ -47,10 +56,22 @@ public class PlayerMovement : Entity
 	//Vector3 cur;//temp variable to access velocity
 	public int cooldown;//for lag frame
 
+//TEMP FOR DEMO///
+	bool atk1;
+	bool atk2;
+	bool isHit;
+	bool weak_atk = false;
+	bool heavy_atk = false;
+//END
+
 //functions
 
 	void Awake(){
+		for(int x = 0; x < num_controls; x++)
+			controls[x] += player;
 		base.Awake ();
+		FRICTION = 1.2f;
+		//isStatic = false;
 		isCrouching = false;
 		cooldown = 0;//initialize cooldown
 		//speed = max_speed;
@@ -59,102 +80,140 @@ public class PlayerMovement : Entity
 		//floorMask = LayerMask.GetMask ("Floor");
 		anim = GetComponent <Animator> ();
 		playerRigidbody = GetComponent <Rigidbody> ();
+		//IgnoreCollision (bottom, floor);
+		hitbox += player;
 	}//Awake
 
 
 
 	void Update(){
 
-		h = Input.GetAxisRaw ("Horizontal2");//raw x axis
-		v = Input.GetAxisRaw ("Vertical2");//raw y axis
-		jump_button = (Input.GetButton("Jump2"));// || Input.GetKey("space"));
-		jump_button_up = (Input.GetButtonUp("Jump2"));// || Input.GetKeyUp("space"));
-
-		isGravity = true;//gravity is on by default
-
-		if(!isGrounded){
-			Move(airMod);
-		}//movement in air
-		else{
-			if(!isCrouching)
-				Move();
-		}//regular horizontal movement
-
-		if ((Input.GetButtonDown ("Jump2"))// || Input.GetKey ("space")) 
-			&& (isGrounded || jumps > 0) && !pressed) {
-			pressed = true;//button is being held down
-			isGravity = false;
-			Jump ();//what is says on the label -_-
-		}//if
-
-		if (Input.GetButtonUp ("Jump2")){// || Input.GetKeyUp ("space"))) {
-			--jumps;
-			pressed = false;//you don't say? D:
-		} //button is no longer down
+		weak_atk = false;
+		heavy_atk = false;
+		h = Input.GetAxisRaw (controls[0]);//raw x axis
+		v = Input.GetAxisRaw (controls[1]);//raw y axis
+		jump_button = (Input.GetButton(controls[2]));// || Input.GetKey("space"));
+		jump_button_up = (Input.GetButtonUp(controls[2]));// || Input.GetKeyUp("space"));
+		crouch_button = Input.GetButton(controls[3]);
+		//TEMP FOR DEMO
+		atk1 = Input.GetButtonDown(controls[4]);
+		atk2 = Input.GetButtonDown(controls[5]);
+		//TEMP FOR DEMO
 		
-		crouch();//might need to change the order
-		if (isCrouching) {
-			//dropDown();
-			moveVect.x = 0;
-		}
+		isGravity = true;//gravity is on by default
+		isJumping = false;
 
-		dropDown ();
+			if(!isGrounded){
+				Move(airMod);
+			}//movement in air
+			else{
+				if(!isCrouching)
+					Move();
+			}//regular horizontal movement
 
-		if(moveVect.x > walkSpeed || moveVect.x < -walkSpeed)
-		foreach(int other in playerLayers){
-			Physics.IgnoreLayerCollision(layer, other);
-		}
+			if (jump_button && (isGrounded || jumps > 0) && !pressed && delay < 1) {
+				delay = 8;
+				isJumping = true;
+				pressed = true;//button is being held down
+				isGravity = false;
+				Jump ();//what is says on the label -_-
+			}//if
+
+		    anim.SetBool ("IsJumping", isJumping);
+
+			if (jump_button_up){
+				--jumps;
+				pressed = false;//you don't say? D:
+			} //button is no longer down
+		
+			crouch();//might need to change the order
+			dropDown();
+
+			if (isCrouching) {
+				moveVect.x = 0;
+				
+			}
+
+			attack();
+
+
+		/*if (moveVect.x > walkSpeed || moveVect.x < -walkSpeed) {
+			foreach (int other in playerLayers) {
+				Physics.IgnoreLayerCollision (layer, other);
+			}
+		} else {
+			isPushing = false;
+			foreach (int other in playerLayers) {
+				Physics.IgnoreLayerCollision (layer, other, false);
+			}
+		}*/
+		
+		if(h != 0)
+			isStatic = false;
 		else
-		foreach(int other in playerLayers){
-			Physics.IgnoreLayerCollision(layer, other, false);
-		}
+			isStatic = true;
 
+		if(moveVect.y > 0)
+			Physics.IgnoreLayerCollision(layer, PLATFORMS, true);
 		base.Update();
+
 	}//Update
 
 
 	void FixedUpdate()
 	{
-		if(cooldown > 0)
-			--cooldown;//count down if neededd
+		if(delay > 0)
+			--delay;//count down if neededd
 
 		//Move (h);
 		Animating (h);
 		
 		if(isGrounded && playerRigidbody.velocity.y <= 0.001){
 			jumps = 2;//once character lands, you get two jumps
-
-		}//if
-		
-		//Debug.Log(playerRigidbody.rotation.eulerAngles.y);
+		}
 	}//FixedUpdate
 
 /*collision detection
 Pretty easy to understand, but I might add more comments soon
 
 */
+	public void OnTriggerEnter(Collider other){
+		if(other.GetComponent<Collider>().name == "Floor" 
+		   || other.GetComponent<Collider>().name == "Platform"){
+			//Physics.IgnoreLayerCollision(layer, PLATFORMS, false);
+			//delay = 5;
+		}
+//TEMP
+		if(other.name != hitbox)
+			if(atk1 || atk2)
+				other.GetComponentInParent<Entity>().SendMessage("knockback", facing);
+				 
+//
+		base.OnTriggerEnter(other);
+	}
 
-	/*void OnCollisionEnter(Collision collision) {
-		base.OnCollisionEnter(collision);
-		foreach (ContactPoint contact in collision.contacts) {
-			if(contact.otherCollider.name == "Platform"){
-				canDrop = true;//are you on a platform?
-			}
-			else {
-				canDrop = false;
-			//Debug.DrawRay(contact.point, contact.normal, Color.white);
-		    }
-
-		}//foreach contact point
-		cooldown = landFrames;//landing lag NOTE: ANY collision will cause this...
-		isGrounded = true;
-	}//OnCollisionEnter
-*/
-	void OnTriggerStay(Collider other){
+	public void OnTriggerStay(Collider other){
 		if (other.GetComponentInParent<Entity>()) {
 			other.GetComponentInParent<Entity>().SendMessage("Pushed", moveVect);
+			isPushing = true;
 		}
-		isPushing = true;
+
+		if(other.name != hitbox)
+			if(atk1 || atk2)
+				other.GetComponentInParent<Entity>().SendMessage("knockback", facing);
+		
+		if(other.GetComponent<Collider>().name == "Floor"){
+		  //|| other.GetComponent<Collider>().name == "Platform"){
+			Physics.IgnoreLayerCollision(layer, PLATFORMS, false);
+		}
+
+	}
+
+	public void OnTriggerExit(Collider other){
+		if(other.GetComponent<Collider>().name == "Floor" 
+		   || other.GetComponent<Collider>().name == "Platform"){
+			//Physics.IgnoreLayerCollision(layer, PLATFORMS, false);
+		}
 	}
 
 
@@ -165,7 +224,7 @@ Animating: BIG SUPRISE!
 
 */
 	void Move (float speed_mod = 1f)
-{
+    {
 		if(h != 0){
 			if(h > 0){
 				facing = RIGHT;
@@ -189,7 +248,7 @@ Animating: BIG SUPRISE!
 			moveVect.x = currSpeed;
 		}//joystick is tilted
 		else{
-			moveVect.x = 0;
+			//moveVect.x = 0;
 			isPushing = false;
 		}//no tilt
 
@@ -201,28 +260,49 @@ Animating: BIG SUPRISE!
 	}//apply jump
 
 	void crouch(){
-		if(isGrounded && (v < 0 || Input.GetButton("Crouch2"))){
+		if(isGrounded && (v < 0 || crouch_button)){
 			isCrouching = true;
+
 		}
 		else{
 			isCrouching = false;
 		}
 	}//what it says on the name
 
+
 	void dropDown()
 	{
-		if(v <= -THRESHOLD /*&& canDrop*/){
-			Physics.IgnoreLayerCollision(layer, PLATFORMS, true);
-			//delay = 0;
+		if(v <= -THRESHOLD){
+			Physics.IgnoreLayerCollision(layer, PLATFORMS);
+			//delay = 5;
 		}//note that this shuts down all collision detection for anything in the platform layer
-		else{
-			Physics.IgnoreLayerCollision(layer, PLATFORMS, false);
-		}//dropDown, drop off a platform
 	}//dropDown
 
 	public virtual void Pushed(Vector3 forces){
-		if (!isPushing)
-						base.Pushed (forces);
+		base.Pushed (forces);
+	}
+
+	void attack(){
+		if(atk2 && isGrounded){
+			heavy_atk = true;
+			anim.Play("Kick");
+		}
+		else
+		  if(atk1 && isGrounded){
+			 weak_atk = true;
+			 anim.Play("Punch");
+		}
+		else {
+			if(atk1 || atk2){
+				heavy_atk = true;
+				anim.Play ("Air_Kick");
+			}
+		}
+	}
+
+	public void knockback(int f){
+		    moveVect.x = 120 * f;
+			
 	}
 	
 	
@@ -232,7 +312,6 @@ Animating: BIG SUPRISE!
 		anim.SetBool ("IsWalking", h != 0 && (h < THRESHOLD || h > -THRESHOLD));// && !isCrouching);
 		anim.SetBool ("IsRunning", h != 0 && h >= THRESHOLD || h <= -THRESHOLD);// && !isCrouching);
 		anim.SetBool ("IsGrounded", isGrounded);
-		anim.SetBool ("IsJumping", isJumping);
 		anim.SetBool ("IsCrouching", isCrouching && isGrounded);
 		anim.SetBool ("IsFalling", !isGrounded);
 		anim.SetBool ("IsJumping2", jumps <= 1);

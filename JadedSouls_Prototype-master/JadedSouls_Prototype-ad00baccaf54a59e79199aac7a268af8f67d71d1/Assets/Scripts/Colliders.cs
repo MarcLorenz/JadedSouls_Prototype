@@ -24,7 +24,7 @@ public class Colliders : MonoBehaviour {
 		//Debug.Log();
 		if(count > 0)
 		  --count;
-		if((rigidbody.velocity.y > 0 || toggle) && toggle2 && count == 0){
+		if((GetComponent<Rigidbody>().velocity.y > 0 || toggle) && toggle2 && count == 0){
 			main.isTrigger = true;
 		}
 		else {

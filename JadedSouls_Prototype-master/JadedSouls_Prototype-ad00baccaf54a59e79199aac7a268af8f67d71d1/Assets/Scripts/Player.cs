@@ -165,13 +165,13 @@ public class Player : MonoBehaviour {
 
 
 	void OnTriggerEnter(Collider other){
-		if(other.collider.name == "Floor" 
-			|| other.collider.name == "Platform"){
+		if(other.GetComponent<Collider>().name == "Floor" 
+			|| other.GetComponent<Collider>().name == "Platform"){
 			delay = landFrames;
 
 		}//if landing, delay movement
 
-		if(other.collider.name == "Edge")
+		if(other.GetComponent<Collider>().name == "Edge")
 		{
 			moveVect = Vector3.zero;
 			controller.transform.position = new Vector3(2, 6, 0);

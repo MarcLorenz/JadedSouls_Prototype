@@ -8,17 +8,18 @@ public class Entity : MonoBehaviour {
 	public const int LEFT = -1;//left
 	public const int PLATFORMS = 8;//platform layer
 	public const float GRAVITY_DEF = -0.5f;
+	public float FRICTION = 1.2f;
 	public float fallSpeed = 10f;//modified fall speed
 	public float gravity = 20f;//225F;//20 * 9.8;
 	public bool isGrounded = false;//is on ground
-	public bool isStatic = false;
+	public bool isStatic = true;//is this affected by certain props
 
 	public int facing;//right = 1, left = -1
 
 	//components
 	public Animator anim;
 	public CharacterController controller;//get the charactercontroller
-	//BoxCollider body_base;
+	BoxCollider body_base;
 	public BoxCollider bottom;//horrible name imo but base is taken
 	public int layer = 0;//do not allow active entities to have the same layer
 	public Rigidbody calcPhy;//REMOVE
@@ -31,6 +32,12 @@ public class Entity : MonoBehaviour {
 
 
 
+	public float abs(float arg){
+		if (arg > 0)
+			return arg;
+		else
+			return -arg;
+	}
 
 	// Use this for initialization
 	
@@ -67,17 +74,29 @@ public class Entity : MonoBehaviour {
 		}//STAY ON THE X AXIS DANGIT
 
 		Gravity(isGravity && !isGrounded);
+		
+		if(isStatic)
+			Friction();
 
 		Animating();
 
 		controller.Move(moveVect * Time.deltaTime);//move
 	}
 	
+	public virtual void Friction(){
+		if(isStatic)
+			moveVect.x /= FRICTION;
+	
+		if(abs(moveVect.x) <= 0.01)
+			moveVect.x = 0;
+	}
+
 	public virtual void OnCollisionEnter(Collision collisionInfo){
-		//if(collisionInfo.other.name == "Platform" 
-		// || collisionInfo.other.name == "Floor")
-		//isGrounded = false;
+
 	}//OnCollisionExit
+
+	public virtual void OnCollisionStay(Collision collisionInfo){
+	}	
 
 	public virtual void OnCollisionExit(Collision collisionInfo){
 		//if(collisionInfo.other.name == "Platform" 
@@ -86,13 +105,13 @@ public class Entity : MonoBehaviour {
 	}//OnCollisionExit
 
 	public virtual void OnTriggerEnter(Collider other){
-		//if(other.collider.name == "Floor" 
-		  // || other.collider.name == "Platform"){
+		if(other.GetComponent<Collider>().name == "Floor" 
+		   || other.GetComponent<Collider>().name == "Platform"){
 		//	delay = landFrames;
 			
-		//}//if landing, delay movement
+		}//if landing, delay movement
 		
-		if(other.collider.name == "Edge")
+		if(other.GetComponent<Collider>().name == "Edge")
 		{
 			moveVect = Vector3.zero;
 			controller.transform.position = new Vector3(2, 6, 0);
@@ -102,17 +121,33 @@ public class Entity : MonoBehaviour {
 		
 		
 	}//OnTriggerEnter
-	
+
+
+
+	//public virtual void OnTriggerStay(Collider other){
+		/*if (other.name == "Floor" 
+		    || other.name == "Platform"){
+			
+				if(moveVect.x > 0)
+					moveVect.x -= FRICTION;
+				else
+			  	  if(moveVect.x < 0)
+				 	moveVect.x += FRICTION;
+
+			    if(abs(moveVect.x) <= FRICTION)
+				  moveVect.x = 0;
+			}*/
+	//}	
 	
 	//only really matters when the collider is disabled
 	public virtual void OnTriggerExit(Collider other){
 		//bottom.isTrigger = false;
-		if (other.GetComponentsInParent<Entity> () != null)
-						moveVect.x = 0;
+		//if (other.GetComponentsInParent<Entity> () == null)
+		//				moveVect.x = 0;
 	}//OnTriggerExit
 
 	public virtual void Pushed(Vector3 forces){
-		moveVect.x = forces.x/10;//10 is a placeholder
+		moveVect.x += forces.x/50;//10 is a placeholder
 	}
 
 	public virtual void Gravity(bool on = true, float modifier = 1f){
